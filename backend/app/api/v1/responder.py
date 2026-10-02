@@ -103,3 +103,110 @@ def get_dispatch_card(
     if not dispatch_card:
         raise HTTPException(status_code=404, detail="Dispatch card not found for this SOS request.")
     return dispatch_card
+
+
+import os
+from fastapi.responses import FileResponse
+from gtts import gTTS
+
+VOICE_UPLOADS_DIR = "uploads/voice"
+os.makedirs(VOICE_UPLOADS_DIR, exist_ok=True)
+
+@router.get("/sos/{sos_id}/voice-dispatch", status_code=status.HTTP_200_OK)
+def get_voice_dispatch(
+    sos_id: str,
+    db: Session = Depends(get_db)
+):
+    sos_record = db.query(SOSRequest).filter(SOSRequest.id == sos_id).first()
+    if not sos_record:
+        raise HTTPException(status_code=404, detail="SOS Request not found.")
+        
+    dispatch_card = db.query(DispatchCard).filter(DispatchCard.sos_id == sos_id).first()
+    
+    text_to_read = f"Emergency Alert. Location: {sos_record.extracted_location}. "
+    text_to_read += f"Urgency is {sos_record.urgency_level}. "
+    
+    if dispatch_card and dispatch_card.notes:
+        text_to_read += f"Action plan: {dispatch_card.notes}. "
+    elif sos_record.action_summary:
+        text_to_read += f"Action plan: {sos_record.action_summary}. "
+
+    if sos_record.medical_details:
+        text_to_read += f"Medical details: {sos_record.medical_details}."
+
+    file_path = os.path.join(VOICE_UPLOADS_DIR, f"voice_dispatch_{sos_id}.mp3")
+    
+    tts = gTTS(text=text_to_read, lang='en')
+    tts.save(file_path)
+    
+    return FileResponse(path=file_path, media_type='audio/mpeg', filename=f"voice_dispatch_{sos_id}.mp3")
+
+from RescuAI.backend.app.models.inventory import ResourceItem, Volunteer
+from pydantic import BaseModel
+
+class ResourceItemCreate(BaseModel):
+    name: str
+    quantity: int
+
+class VolunteerCreate(BaseModel):
+    name: str
+    phone: str
+    latitude: Optional[float] = None
+    longitude: Optional[float] = None
+
+@router.post("/inventory", status_code=status.HTTP_201_CREATED)
+def add_inventory(
+    payload: ResourceItemCreate,
+    db: Session = Depends(get_db)
+):
+    item = ResourceItem(name=payload.name, quantity=payload.quantity)
+    db.add(item)
+    db.commit()
+    db.refresh(item)
+    return item
+
+@router.get("/inventory", status_code=status.HTTP_200_OK)
+def get_inventory(db: Session = Depends(get_db)):
+    return db.query(ResourceItem).all()
+
+@router.post("/volunteer", status_code=status.HTTP_201_CREATED)
+def add_volunteer(
+    payload: VolunteerCreate,
+    db: Session = Depends(get_db)
+):
+    volunteer = Volunteer(name=payload.name, phone=payload.phone, latitude=payload.latitude, longitude=payload.longitude)
+    db.add(volunteer)
+    db.commit()
+    db.refresh(volunteer)
+    return volunteer
+
+@router.get("/volunteer", status_code=status.HTTP_200_OK)
+def get_volunteers(db: Session = Depends(get_db)):
+    return db.query(Volunteer).all()
+
+
+from reportlab.pdfgen import canvas
+from reportlab.lib.pagesizes import letter
+import datetime
+
+REPORTS_DIR = "uploads/reports"
+os.makedirs(REPORTS_DIR, exist_ok=True)
+
+@router.get("/report/pdf", status_code=status.HTTP_200_OK)
+def get_pdf_report(db: Session = Depends(get_db)):
+    total_requests = db.query(SOSRequest).count()
+    critical_requests = db.query(SOSRequest).filter(SOSRequest.urgency_level == UrgencyLevel.CRITICAL).count()
+    pending_requests = db.query(SOSRequest).filter(SOSRequest.status == SOSStatus.PENDING).count()
+
+    filename = f"report_{datetime.datetime.now().strftime('%Y%m%d%H%M%S')}.pdf"
+    file_path = os.path.join(REPORTS_DIR, filename)
+
+    c = canvas.Canvas(file_path, pagesize=letter)
+    c.drawString(100, 750, "RescuAI - Emergency Response Report")
+    c.drawString(100, 730, f"Generated on: {datetime.datetime.now().strftime('%Y-%m-%d %H:%M:%S')}")
+    c.drawString(100, 700, f"Total SOS Requests: {total_requests}")
+    c.drawString(100, 680, f"Critical Requests: {critical_requests}")
+    c.drawString(100, 660, f"Pending Requests: {pending_requests}")
+    c.save()
+
+    return FileResponse(path=file_path, media_type='application/pdf', filename=filename)

@@ -9,6 +9,7 @@ from RescuAI.backend.app.core.database import Base
 class InputType(str, enum.Enum):
     TEXT = "TEXT"
     AUDIO = "AUDIO"
+    IMAGE = "IMAGE"
 
 
 class UrgencyLevel(str, enum.Enum):
@@ -38,6 +39,7 @@ class SOSRequest(Base):
     input_type = Column(SQLEnum(InputType), nullable=False, default=InputType.TEXT)
     raw_text = Column(Text, nullable=True)
     audio_file_path = Column(String(500), nullable=True)
+    image_file_path = Column(String(500), nullable=True)
     transcribed_text = Column(Text, nullable=True)
     urgency_level = Column(SQLEnum(UrgencyLevel), nullable=False, default=UrgencyLevel.MODERATE)
     category = Column(SQLEnum(SOSCategory), nullable=False, default=SOSCategory.GENERAL)

@@ -9,6 +9,7 @@ from RescuAI.backend.app.core.config import settings
 from RescuAI.backend.app.core.database import engine, Base, SessionLocal
 from RescuAI.backend.app.core.security import get_password_hash
 from RescuAI.backend.app.models.user import User, UserRole
+from RescuAI.backend.app.models.inventory import ResourceItem, Volunteer
 from RescuAI.backend.app.api.api import api_router
 
 # Configure Logging

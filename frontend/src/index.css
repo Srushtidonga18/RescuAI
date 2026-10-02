@@ -1,0 +1,27 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    font-family: 'Inter', sans-serif;
+  }
+}
+
+/* Custom Print Styles for Dispatch Cards */
+@media print {
+  body * {
+    visibility: hidden;
+  }
+  #printable-dispatch-card, #printable-dispatch-card * {
+    visibility: visible;
+  }
+  #printable-dispatch-card {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 100%;
+    margin: 0;
+    padding: 20px;
+  }
+}

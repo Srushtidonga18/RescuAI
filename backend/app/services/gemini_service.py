@@ -127,6 +127,31 @@ class GeminiService:
 
         return self._dynamic_nlp_triage_engine("Audio distress call received. Immediate dispatch triage required.", user_lat, user_long)
 
+    def process_image(self, image_bytes: bytes, mime_type: str = "image/jpeg", user_lat: Optional[float] = None, user_long: Optional[float] = None) -> GeminiExtractionResult:
+        """Process image SOS using Gemini Multimodal."""
+        if self.client:
+            for model_name in AVAILABLE_GEMINI_MODELS:
+                try:
+                    from google.genai import types
+                    image_part = types.Part.from_bytes(data=image_bytes, mime_type=mime_type)
+                    config = types.GenerateContentConfig(
+                        response_mime_type="application/json",
+                        http_options=types.HttpOptions(timeout=10.0)
+                    )
+                    response = self.client.models.generate_content(
+                        model=model_name,
+                        contents=[GEMINI_SYSTEM_PROMPT, image_part],
+                        config=config
+                    )
+                    data = json.loads(response.text)
+                    return self._parse_and_validate(data, "Image SOS Message", user_lat, user_long)
+                except Exception as e:
+                    logger.debug(f"Image model {model_name} failed: {e}.")
+                    if "401" in str(e) or "403" in str(e) or "API_KEY_INVALID" in str(e):
+                        break
+
+        return self._dynamic_nlp_triage_engine("Image distress call received. Immediate visual triage required.", user_lat, user_long)
+
     def _parse_and_validate(self, data: dict, original_text: str, user_lat: Optional[float], user_long: Optional[float]) -> GeminiExtractionResult:
         return GeminiExtractionResult(
             transcribed_text=data.get("transcribed_text") or original_text,
