@@ -5,19 +5,6 @@ import { AuthContext } from '../context/AuthContext';
 import StatsBar from './StatsBar';
 import SOSCard from './SOSCard';
 import DispatchModal from './DispatchModal';
-import { MapContainer, TileLayer, Marker, Popup } from 'react-leaflet';
-import 'leaflet/dist/leaflet.css';
-
-// Fix leaflet icon issue natively in React
-import L from 'leaflet';
-import icon from 'leaflet/dist/images/marker-icon.png';
-import iconShadow from 'leaflet/dist/images/marker-shadow.png';
-let DefaultIcon = L.icon({
-    iconUrl: icon,
-    shadowUrl: iconShadow,
-    iconAnchor: [12, 41]
-});
-L.Marker.prototype.options.icon = DefaultIcon;
 
 const ResponderDashboard = () => {
   const [items, setItems] = useState([]);
@@ -187,12 +174,6 @@ const ResponderDashboard = () => {
           <ShieldAlert className="w-4 h-4" /> Queue
         </button>
         <button
-          onClick={() => setDashboardTab('map')}
-          className={`pb-2 px-1 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${dashboardTab === 'map' ? 'border-red-600 text-red-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
-        >
-          <Map className="w-4 h-4" /> Live Map
-        </button>
-        <button
           onClick={() => setDashboardTab('inventory')}
           className={`pb-2 px-1 text-sm font-bold flex items-center gap-2 border-b-2 transition-colors ${dashboardTab === 'inventory' ? 'border-red-600 text-red-600' : 'border-transparent text-slate-500 hover:text-slate-700'}`}
         >
@@ -347,25 +328,6 @@ const ResponderDashboard = () => {
         </>
       )}
 
-      {dashboardTab === 'map' && (
-        <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm h-[500px]">
-          <MapContainer center={[20.5937, 78.9629]} zoom={5} style={{ height: '100%', width: '100%' }}>
-            <TileLayer
-              attribution='&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors'
-              url="https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png"
-            />
-            {mapData.map((marker) => (
-              <Marker key={marker.id} position={[marker.lat, marker.lng]}>
-                <Popup>
-                  <strong>{marker.location}</strong><br />
-                  Urgency: {marker.urgency}
-                </Popup>
-              </Marker>
-            ))}
-          </MapContainer>
-        </div>
-      )}
-
       {dashboardTab === 'inventory' && (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm p-4">
           <h3 className="font-bold mb-4 text-slate-800">Available Resources</h3>
@@ -410,3 +372,4 @@ const ResponderDashboard = () => {
 };
 
 export default ResponderDashboard;
+
