@@ -9,14 +9,14 @@
 
 ---
 
-##  Key Features
+## 🌟 Key Features
 
-- **Multimodal AI Triage:** Ingests raw text and voice messages, using Google Gemini AI to extract urgency, location, medical needs, and victim counts.
-- **Offline Fallback Engine:** A robust, custom Regex-based NLP engine ensures the system continues to generate dispatch orders even if internet connectivity or the AI API fails.
-- **Smart Spatial Deduplication:** Groups duplicate SOS requests within a 500-meter radius (using the Haversine formula) to prevent redundant dispatching.
-- **AI Spam Detection:** Automatically flags and filters out non-emergency, troll, or commercial spam messages.
-- **Real-Time Responder Dashboard:** A modern React.js interface for dispatchers to view a prioritized queue, manually assign rescue teams (NDRF/SDRF), and track inventory.
-- **First-Aid AI Chatbot:** An intelligent assistant providing citizens with immediate, life-saving medical guidance (e.g., CPR, burns, snake bites) while they wait for help.
+- **🧠 Multimodal AI Triage:** Ingests raw text and voice messages, using Google Gemini AI to extract urgency, location, medical needs, and victim counts.
+- **🛡️ Offline Fallback Engine:** A robust, custom Regex-based NLP engine ensures the system continues to generate dispatch orders even if internet connectivity or the AI API fails.
+- **📍 Smart Spatial Deduplication:** Groups duplicate SOS requests within a 500-meter radius (using the Haversine formula) to prevent redundant dispatching.
+- **🛑 AI Spam Detection:** Automatically flags and filters out non-emergency, troll, or commercial spam messages.
+- **🚑 Real-Time Responder Dashboard:** A modern React.js interface for dispatchers to view a prioritized queue, manually assign rescue teams (NDRF/SDRF), and track inventory.
+- **🩺 First-Aid AI Chatbot:** An intelligent assistant providing citizens with immediate, life-saving medical guidance (e.g., CPR, burns, snake bites) while they wait for help.
 
 ---
 
@@ -32,7 +32,7 @@
 
 ---
 
-## Technology Stack
+## 🛠️ Technology Stack
 
 - **Backend:** Python 3.10+, FastAPI, Uvicorn, SQLAlchemy 2.0 (ORM)
 - **Frontend:** React.js (Vite), Tailwind CSS, Lucide React
@@ -42,10 +42,10 @@
 
 ---
 
-## How to Run Locally
+## 🚀 How to Run Locally
 
 ### 1. Backend Setup
-\\\ash
+```bash
 # Navigate to the backend directory
 cd backend
 
@@ -57,10 +57,10 @@ pip install -r requirements.txt
 
 # Start the FastAPI Server (Port 8000)
 python -m uvicorn backend.app.main:app
-\\\
+```
 
 ### 2. Frontend Setup
-\\\ash
+```bash
 # Open a new terminal and navigate to frontend
 cd frontend
 
@@ -69,14 +69,22 @@ npm install
 
 # Start the Vite Development Server (Port 5173)
 npm run dev
-\\\
+```
 
 ### 3. Environment Variables
-Ensure a .env file exists in ackend/.env with your Google Gemini API key:
-\\\env
+Ensure a `.env` file exists in `backend/.env` with your Google Gemini API key:
+```env
 GEMINI_API_KEY="AIzaSyYourKeyHere..."
 SECRET_KEY="your-secret-key"
-\\\
+```
+
+---
+
+## 👥 Contributors
+
+- **Srushti Donga** (Pre-Final Year, Computer Engineering)
+- **Guided By:** Harsha Ma'am
+- **Institution:** G. H. Patel College of Engineering & Technology
 
 ---
 *Built to save lives, milliseconds at a time.*
