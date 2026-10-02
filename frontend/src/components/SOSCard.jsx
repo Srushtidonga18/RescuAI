@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { MapPin, Users, Activity, FileSpreadsheet, ChevronDown, ChevronUp, CheckCircle2, Truck, Copy, Check, Volume2 } from 'lucide-react';
 import api from '../api/axios';
 
-const SOSCard = ({ item, onStatusUpdated, onViewDispatchCard }) => {
+const SOSCard = ({ item, volunteers = [], onStatusUpdated, onViewDispatchCard }) => {
   const [expanded, setExpanded] = useState(false);
   const [updating, setUpdating] = useState(false);
   const [copied, setCopied] = useState(false);
@@ -40,18 +40,35 @@ const SOSCard = ({ item, onStatusUpdated, onViewDispatchCard }) => {
     }
   };
 
-  const handleStatusChange = async (newStatus) => {
+  const handleStatusChange = async (newStatus, manualTeam = null) => {
     setUpdating(true);
     try {
+      let team = manualTeam;
+      if (!team && volunteers && volunteers.length > 0) {
+        team = volunteers[0].name;
+      } else if (!team) {
+        team = 'Alpha Rescue Squad';
+      }
       await api.patch(`/api/v1/responder/sos/${item.id}/status`, {
         status: newStatus,
-        assigned_team: 'Alpha Rescue Squad',
+        assigned_team: team,
       });
       if (onStatusUpdated) onStatusUpdated();
     } catch (err) {
       console.error('Status update failed:', err);
     } finally {
       setUpdating(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (window.confirm("Are you sure you want to permanently delete this resolved case?")) {
+      try {
+        await api.delete(`/api/v1/responder/sos/${item.id}`);
+        if (onStatusUpdated) onStatusUpdated();
+      } catch (err) {
+        console.error("Delete failed", err);
+      }
     }
   };
 
@@ -76,7 +93,7 @@ const SOSCard = ({ item, onStatusUpdated, onViewDispatchCard }) => {
     <div className={`bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-white shadow-md transition-all hover:border-slate-700 ${getBorderColor(item.urgency_level)}`}>
       {/* Top Header Row */}
       <div className="flex items-center justify-between gap-2 mb-2">
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-end gap-1.5 mt-1 sm:mt-0">
           <span className={`px-2 py-0.5 rounded text-[11px] font-black uppercase tracking-wider ${getUrgencyBadge(item.urgency_level)}`}>
             {item.urgency_level}
           </span>
@@ -151,7 +168,7 @@ const SOSCard = ({ item, onStatusUpdated, onViewDispatchCard }) => {
       )}
 
       {/* Card Action Buttons */}
-      <div className="flex items-center justify-between gap-1.5 pt-2 border-t border-slate-800">
+      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-800">
         <button
           onClick={() => setExpanded(!expanded)}
           className="text-[11px] text-slate-400 hover:text-white flex items-center gap-0.5 font-medium transition-colors"
@@ -160,7 +177,7 @@ const SOSCard = ({ item, onStatusUpdated, onViewDispatchCard }) => {
           <span>{expanded ? 'Less' : 'Transcript'}</span>
         </button>
 
-        <div className="flex items-center gap-1.5">
+        <div className="flex flex-wrap items-center justify-end gap-1.5 mt-1 sm:mt-0">
           <button
             onClick={handlePlayDispatchAudio}
             title="Play Dispatch Audio"
@@ -179,14 +196,23 @@ const SOSCard = ({ item, onStatusUpdated, onViewDispatchCard }) => {
           </button>
 
           {item.status === 'PENDING' && (
-            <button
-              disabled={updating}
-              onClick={() => handleStatusChange('DISPATCHED')}
-              className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-bold transition-colors shadow-sm flex items-center gap-1"
-            >
-              <Truck className="w-3 h-3" />
-              <span>Dispatch</span>
-            </button>
+            <div className="flex items-center gap-1">
+              <select id={`card-select-${item.id}`} className="px-1 py-1 text-[10px] border border-slate-700 rounded bg-slate-800 text-white" defaultValue="">
+                <option value="">Auto Assign</option>
+                {volunteers.map(v => <option key={v.name} value={v.name}>{v.name}</option>)}
+              </select>
+              <button
+                disabled={updating}
+                onClick={() => {
+                  const selectEl = document.getElementById(`card-select-${item.id}`);
+                  handleStatusChange('DISPATCHED', selectEl ? selectEl.value : null);
+                }}
+                className="px-2.5 py-1 bg-blue-600 hover:bg-blue-500 text-white rounded text-[11px] font-bold transition-colors shadow-sm flex items-center gap-1"
+              >
+                <Truck className="w-3 h-3" />
+                <span>Dispatch</span>
+              </button>
+            </div>
           )}
 
           {item.status === 'DISPATCHED' && (

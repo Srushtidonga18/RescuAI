@@ -1,3 +1,7 @@
+import os
+from dotenv import load_dotenv
+env_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), '.env')
+load_dotenv(env_path)
 import json
 import re
 import logging
@@ -65,7 +69,7 @@ class GeminiService:
         self._init_client()
 
     def _init_client(self):
-        if self.api_key and self.api_key.startswith("AIza"):
+        if self.api_key:
             try:
                 from google import genai
                 self.client = genai.Client(api_key=self.api_key)

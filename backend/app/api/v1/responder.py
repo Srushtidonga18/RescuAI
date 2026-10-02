@@ -154,6 +154,22 @@ class VolunteerCreate(BaseModel):
     latitude: Optional[float] = None
     longitude: Optional[float] = None
 
+@router.delete("/sos/{sos_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_sos(
+    sos_id: str,
+    db: Session = Depends(get_db),
+    current_user: User = Depends(get_current_user)
+):
+    sos_record = db.query(SOSRequest).filter(SOSRequest.id == sos_id).first()
+    if sos_record:
+        # Also delete associated dispatch card
+        dispatch_card = db.query(DispatchCard).filter(DispatchCard.sos_id == sos_id).first()
+        if dispatch_card:
+            db.delete(dispatch_card)
+        db.delete(sos_record)
+        db.commit()
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
+
 @router.post("/inventory", status_code=status.HTTP_201_CREATED)
 def add_inventory(
     payload: ResourceItemCreate,
@@ -210,3 +226,4 @@ def get_pdf_report(db: Session = Depends(get_db)):
     c.save()
 
     return FileResponse(path=file_path, media_type='application/pdf', filename=filename)
+

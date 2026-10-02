@@ -22,6 +22,11 @@ const ResponderDashboard = () => {
 
   // Filters & Search
   const [searchLocation, setSearchLocation] = useState('');
+  const [newInvName, setNewInvName] = useState('');
+  const [newInvQty, setNewInvQty] = useState('');
+  const [newVolName, setNewVolName] = useState('');
+  const [newVolPhone, setNewVolPhone] = useState('');
+
   const [urgencyFilter, setUrgencyFilter] = useState('');
   const [categoryFilter, setCategoryFilter] = useState('');
   const [autoRefresh, setAutoRefresh] = useState(true);
@@ -74,22 +79,17 @@ const ResponderDashboard = () => {
 
   useEffect(() => {
     fetchDashboardData();
+    fetchInventory();
+    fetchVolunteers();
   }, [fetchDashboardData]);
-
-  useEffect(() => {
-    if (dashboardTab === 'map') fetchMapData();
-    if (dashboardTab === 'inventory') fetchInventory();
-    if (dashboardTab === 'volunteers') fetchVolunteers();
-  }, [dashboardTab]);
 
   useEffect(() => {
     if (!autoRefresh) return;
     const interval = setInterval(() => {
       fetchDashboardData();
-      if (dashboardTab === 'map') fetchMapData();
     }, 10000);
     return () => clearInterval(interval);
-  }, [autoRefresh, fetchDashboardData, dashboardTab]);
+  }, [autoRefresh, fetchDashboardData]);
 
   const displayedItems = items.filter((item) => {
     if (activeTab === 'active') {
@@ -116,16 +116,44 @@ const ResponderDashboard = () => {
     }
   };
 
-  const handleStatusChange = async (sosId, newStatus) => {
+  const handleStatusChange = async (sosId, newStatus, manualTeam = null) => {
     try {
+      let team = manualTeam;
+      if (!team && volunteers && volunteers.length > 0) {
+        team = volunteers[0].name;
+      } else if (!team) {
+        team = 'Alpha Rescue Squad';
+      }
+
       await api.patch(`/api/v1/responder/sos/${sosId}/status`, {
         status: newStatus,
-        assigned_team: 'Alpha Rescue Squad',
+        assigned_team: team,
       });
       fetchDashboardData();
     } catch (err) {
       console.error('Status update failed:', err);
     }
+  };
+
+  
+  const handleAddInventory = async (e) => {
+    e.preventDefault();
+    if (!newInvName || !newInvQty) return;
+    try {
+      await api.post('/api/v1/responder/inventory', { name: newInvName, quantity: parseInt(newInvQty) });
+      setNewInvName(''); setNewInvQty('');
+      fetchInventory();
+    } catch(err) { console.error(err); }
+  };
+
+  const handleAddVolunteer = async (e) => {
+    e.preventDefault();
+    if (!newVolName || !newVolPhone) return;
+    try {
+      await api.post('/api/v1/responder/volunteer', { name: newVolName, phone: newVolPhone });
+      setNewVolName(''); setNewVolPhone('');
+      fetchVolunteers();
+    } catch(err) { console.error(err); }
   };
 
   const handleCopyLandmark = (landmark, id) => {
@@ -278,6 +306,7 @@ const ResponderDashboard = () => {
                 <SOSCard
                   key={item.id}
                   item={item}
+                  volunteers={volunteers}
                   onStatusUpdated={fetchDashboardData}
                   onViewDispatchCard={handleViewDispatchCard}
                 />
@@ -315,7 +344,18 @@ const ResponderDashboard = () => {
                         </td>
                         <td className="p-3 text-right">
                           <button onClick={() => handleViewDispatchCard(item)} className="px-2 py-1 bg-slate-800 text-white rounded text-[10px] font-semibold mr-1">Card</button>
-                          {item.status === 'PENDING' && <button onClick={() => handleStatusChange(item.id, 'DISPATCHED')} className="px-2 py-1 bg-blue-600 text-white rounded text-[10px] font-bold">Dispatch</button>}
+                          {item.status === 'PENDING' && (
+  <div className="inline-flex items-center gap-1">
+    <select id={`team-select-${item.id}`} className="px-1 py-1 text-[10px] border border-slate-300 rounded bg-white" defaultValue="">
+      <option value="">Auto Assign</option>
+      {volunteers.map(v => <option key={v.name} value={v.name}>{v.name}</option>)}
+    </select>
+    <button onClick={() => {
+      const selectEl = document.getElementById(`team-select-${item.id}`);
+      handleStatusChange(item.id, 'DISPATCHED', selectEl ? selectEl.value : null);
+    }} className="px-2 py-1 bg-blue-600 text-white rounded text-[10px] font-bold">Dispatch</button>
+  </div>
+)}
                           {item.status === 'DISPATCHED' && <button onClick={() => handleStatusChange(item.id, 'RESCUED')} className="px-2 py-1 bg-emerald-600 text-white rounded text-[10px] font-bold">Rescued</button>}
                         </td>
                       </tr>
@@ -331,6 +371,11 @@ const ResponderDashboard = () => {
       {dashboardTab === 'inventory' && (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm p-4">
           <h3 className="font-bold mb-4 text-slate-800">Available Resources</h3>
+          <form onSubmit={handleAddInventory} className="mb-6 flex gap-2">
+            <input type="text" placeholder="Item Name" value={newInvName} onChange={e=>setNewInvName(e.target.value)} className="border rounded p-2 text-sm flex-1" required />
+            <input type="number" placeholder="Qty" value={newInvQty} onChange={e=>setNewInvQty(e.target.value)} className="border rounded p-2 text-sm w-24" required />
+            <button type="submit" className="bg-red-600 text-white px-4 py-2 rounded text-sm font-bold">Add</button>
+          </form>
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="border-b bg-slate-50"><th className="p-2">Item Name</th><th className="p-2">Quantity</th></tr>
@@ -347,13 +392,18 @@ const ResponderDashboard = () => {
       {dashboardTab === 'volunteers' && (
         <div className="bg-white border border-slate-200 rounded-2xl overflow-hidden shadow-sm p-4">
           <h3 className="font-bold mb-4 text-slate-800">Active Volunteers</h3>
+          <form onSubmit={handleAddVolunteer} className="mb-6 flex gap-2">
+            <input type="text" placeholder="Volunteer Name" value={newVolName} onChange={e=>setNewVolName(e.target.value)} className="border rounded p-2 text-sm flex-1" required />
+            <input type="text" placeholder="Phone" value={newVolPhone} onChange={e=>setNewVolPhone(e.target.value)} className="border rounded p-2 text-sm flex-1" required />
+            <button type="submit" className="bg-red-600 text-white px-4 py-2 rounded text-sm font-bold">Register</button>
+          </form>
           <table className="w-full text-left text-sm border-collapse">
             <thead>
               <tr className="border-b bg-slate-50"><th className="p-2">Name</th><th className="p-2">Specialty</th><th className="p-2">Location</th></tr>
             </thead>
             <tbody>
               {volunteers.length > 0 ? volunteers.map(vol => (
-                <tr key={vol.id} className="border-b"><td className="p-2">{vol.name}</td><td className="p-2">{vol.specialty}</td><td className="p-2">{vol.location}</td></tr>
+                <tr key={vol.id} className="border-b"><td className="p-2">{vol.name}</td><td className="p-2">{vol.phone}</td><td className="p-2">{vol.location}</td></tr>
               )) : <tr><td colSpan="3" className="p-2 text-center text-slate-500">No volunteers found</td></tr>}
             </tbody>
           </table>
