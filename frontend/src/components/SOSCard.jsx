@@ -67,6 +67,11 @@ const SOSCard = ({ item, onStatusUpdated, onViewDispatchCard }) => {
     ? new Date(item.created_at).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
     : 'Just now';
 
+  const handlePlayDispatchAudio = () => {
+    const audio = new Audio(`http://localhost:8000/api/v1/responder/sos/${item.id}/voice-dispatch`);
+    audio.play().catch(e => console.error("Audio play failed:", e));
+  };
+
   return (
     <div className={`bg-slate-900 border border-slate-800 rounded-xl p-3.5 text-white shadow-md transition-all hover:border-slate-700 ${getBorderColor(item.urgency_level)}`}>
       {/* Top Header Row */}
@@ -156,6 +161,15 @@ const SOSCard = ({ item, onStatusUpdated, onViewDispatchCard }) => {
         </button>
 
         <div className="flex items-center gap-1.5">
+          <button
+            onClick={handlePlayDispatchAudio}
+            title="Play Dispatch Audio"
+            className="px-2 py-1 bg-amber-500/10 hover:bg-amber-500/20 text-amber-400 rounded text-[11px] font-semibold flex items-center gap-1 transition-colors border border-amber-500/20"
+          >
+            <Volume2 className="w-3 h-3" />
+            <span className="hidden sm:inline">Dispatch Audio</span>
+          </button>
+          
           <button
             onClick={() => onViewDispatchCard(item)}
             className="px-2.5 py-1 bg-slate-800 hover:bg-slate-700 text-white rounded text-[11px] font-semibold flex items-center gap-1 transition-colors border border-slate-700"

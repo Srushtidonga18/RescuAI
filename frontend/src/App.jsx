@@ -4,6 +4,7 @@ import Navbar from './components/Navbar';
 import CitizenSOS from './components/CitizenSOS';
 import ResponderDashboard from './components/ResponderDashboard';
 import LoginModal from './components/LoginModal';
+import FirstAidChatbot from './components/FirstAidChatbot';
 
 const AppContent = () => {
   const [currentTab, setCurrentTab] = useState('citizen'); // 'citizen' or 'responder'
@@ -53,6 +54,9 @@ const AppContent = () => {
         onClose={() => setIsLoginModalOpen(false)}
         onSuccess={() => setCurrentTab('responder')}
       />
+
+      {/* Floating First Aid Chatbot */}
+      <FirstAidChatbot />
 
       {/* Footer */}
       <footer className="bg-slate-900 text-slate-400 py-6 text-center text-xs border-t border-slate-800">

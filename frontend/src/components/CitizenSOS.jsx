@@ -1,15 +1,16 @@
 import React, { useState } from 'react';
-import { Send, MapPin, Mic, FileText, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles, Navigation, PackageCheck } from 'lucide-react';
+import { Send, MapPin, Mic, FileText, AlertTriangle, CheckCircle2, ShieldAlert, Sparkles, Navigation, PackageCheck, Camera } from 'lucide-react';
 import api from '../api/axios';
 import AudioRecorder from './AudioRecorder';
 
 const CitizenSOS = () => {
-  const [activeMode, setActiveMode] = useState('text'); // 'text' or 'audio'
+  const [activeMode, setActiveMode] = useState('text'); // 'text', 'audio', or 'image'
   const [rawText, setRawText] = useState('');
   const [latitude, setLatitude] = useState(null);
   const [longitude, setLongitude] = useState(null);
   const [locationStatus, setLocationStatus] = useState('');
   const [audioBlob, setAudioBlob] = useState(null);
+  const [imageFile, setImageFile] = useState(null);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState(null);
@@ -87,6 +88,34 @@ const CitizenSOS = () => {
     }
   };
 
+  // Image SOS Submit
+  const handleImageSubmit = async (e) => {
+    e.preventDefault();
+    if (!imageFile) return;
+
+    setLoading(true);
+    setError(null);
+    setResult(null);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', imageFile);
+      if (latitude) formData.append('latitude', latitude);
+      if (longitude) formData.append('longitude', longitude);
+
+      const response = await api.post('/api/v1/sos/image', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' },
+      });
+      setResult(response.data);
+      setImageFile(null);
+    } catch (err) {
+      console.error('Image submit error:', err);
+      setError(err.response?.data?.detail || 'Failed to process image SOS. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const getUrgencyBadge = (level) => {
     switch (level) {
       case 'CRITICAL':
@@ -119,7 +148,7 @@ const CitizenSOS = () => {
         {/* Decorative Top Accent Bar */}
         <div className="absolute top-0 left-0 right-0 h-2 bg-gradient-to-r from-red-600 via-amber-500 to-emerald-600"></div>
 
-        {/* Tab Switcher: Text vs Audio */}
+        {/* Tab Switcher: Text vs Audio vs Image */}
         <div className="flex rounded-2xl bg-slate-100 p-1.5 mb-6">
           <button
             type="button"
@@ -127,14 +156,15 @@ const CitizenSOS = () => {
               setActiveMode('text');
               setResult(null);
             }}
-            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+            className={`flex-1 py-3 px-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all ${
               activeMode === 'text'
                 ? 'bg-white text-slate-900 shadow-md shadow-slate-200'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <FileText className="w-4 h-4 text-red-600" />
-            <span>Text Distress Message</span>
+            <span className="hidden sm:inline">Text Distress Message</span>
+            <span className="sm:hidden">Text</span>
           </button>
           <button
             type="button"
@@ -142,14 +172,31 @@ const CitizenSOS = () => {
               setActiveMode('audio');
               setResult(null);
             }}
-            className={`flex-1 py-3 px-4 rounded-xl text-sm font-bold flex items-center justify-center gap-2 transition-all ${
+            className={`flex-1 py-3 px-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all ${
               activeMode === 'audio'
                 ? 'bg-white text-slate-900 shadow-md shadow-slate-200'
                 : 'text-slate-500 hover:text-slate-900'
             }`}
           >
             <Mic className="w-4 h-4 text-red-600" />
-            <span>Voice Recording SOS</span>
+            <span className="hidden sm:inline">Voice Recording SOS</span>
+            <span className="sm:hidden">Audio</span>
+          </button>
+          <button
+            type="button"
+            onClick={() => {
+              setActiveMode('image');
+              setResult(null);
+            }}
+            className={`flex-1 py-3 px-2 rounded-xl text-xs sm:text-sm font-bold flex items-center justify-center gap-1.5 transition-all ${
+              activeMode === 'image'
+                ? 'bg-white text-slate-900 shadow-md shadow-slate-200'
+                : 'text-slate-500 hover:text-slate-900'
+            }`}
+          >
+            <Camera className="w-4 h-4 text-red-600" />
+            <span className="hidden sm:inline">Image SOS</span>
+            <span className="sm:hidden">Image</span>
           </button>
         </div>
 
@@ -241,6 +288,46 @@ const CitizenSOS = () => {
               )}
             </button>
           </div>
+        )}
+
+        {/* MODE 3: IMAGE SOS FORM */}
+        {activeMode === 'image' && (
+          <form onSubmit={handleImageSubmit} className="space-y-6">
+            <div className="border-2 border-dashed border-slate-300 rounded-2xl p-8 text-center hover:bg-slate-50 transition-colors">
+              <input
+                type="file"
+                accept="image/*"
+                id="image-upload"
+                onChange={(e) => setImageFile(e.target.files[0])}
+                className="hidden"
+              />
+              <label htmlFor="image-upload" className="cursor-pointer flex flex-col items-center">
+                <Camera className="w-10 h-10 text-slate-400 mb-3" />
+                <span className="text-sm font-medium text-slate-700">
+                  {imageFile ? imageFile.name : 'Click to Upload Image'}
+                </span>
+                <span className="text-xs text-slate-500 mt-1">JPEG, PNG up to 10MB</span>
+              </label>
+            </div>
+
+            <button
+              type="submit"
+              disabled={loading || !imageFile}
+              className="w-full py-4 bg-red-600 hover:bg-red-500 disabled:opacity-50 text-white font-extrabold rounded-2xl shadow-xl shadow-red-600/30 transition-all flex items-center justify-center gap-2 text-base"
+            >
+              {loading ? (
+                <div className="flex items-center gap-2">
+                  <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                  <span>Processing Image with Gemini AI...</span>
+                </div>
+              ) : (
+                <>
+                  <Camera className="w-5 h-5" />
+                  <span>TRANSMIT IMAGE DISTRESS SIGNAL</span>
+                </>
+              )}
+            </button>
+          </form>
         )}
 
         {/* SUCCESS RESULT CARD (DYNAMIC TRIAGE PREVIEW) */}
